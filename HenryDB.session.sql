@@ -27,4 +27,30 @@ select BRANCH_NAME,
         ON_HAND
 from HENRY_BRANCH branch
         join HENRY_INVENTORY inventory on branch.BRANCH_NUM = inventory.BRANCH_NUM
-where inventory.BOOK_CODE = "138X";
+where inventory.BOOK_CODE = "0808";
+
+select *
+from HENRY_BOOK;
+
+select TYPE
+from HENRY_BOOK
+group by TYPE;
+
+select BOOK_CODE,
+        TITLE,
+        PRICE
+from HENRY_BOOK
+where TYPE = "TRA";
+
+select
+select BOOK_CODE,
+        TITLE,
+        PRICE,
+        PUBLISHER_CODE
+from HENRY_BOOK
+where PUBLISHER_CODE = "JP";
+
+select book.PUBLISHER_CODE,
+        PUBLISHER_NAME
+from HENRY_PUBLISHER publisher
+        join HENRY_BOOK book on publisher.PUBLISHER_CODE = book.PUBLISHER_CODE;
