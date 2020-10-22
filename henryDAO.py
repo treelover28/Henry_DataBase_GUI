@@ -36,6 +36,17 @@ class HenryDAO:
         def get_price(self):
             return self.price
 
+    class Publisher:
+        def __init__(self, publisher_code, publisher_name):
+            self.publisher_code = publisher_code
+            self.publisher_name = publisher_name
+
+        def get_publisher_code(self):
+            return self.publisher_code
+
+        def get_publisher_name(self):
+            return self.publisher_name
+
     class Branch_Inventory:
         def __init__(self, branch_name, inventory):
             self.branch_name = branch_name
@@ -102,7 +113,7 @@ class HenryDAO:
     def get_author_books(self, author_num):
         sql_query = """
             select wrote.BOOK_CODE,TITLE,PRICE
-            from HENRY_BOOK book join HENRY_WROTE wrote 
+            from HENRY_BOOK book join HENRY_WROTE wrote
             on book.BOOK_CODE = wrote.BOOK_CODE
             where wrote.AUTHOR_NUM = {};
             """.format(author_num)
@@ -118,11 +129,25 @@ class HenryDAO:
             books.append(book)
         return books
 
-    def get_category_books(self, category_num):
-        # TODO Fill in SQL
+    def get_categories(self):
         sql_query = """
-            select stuff {};
-            """.format(category_num)
+        select TYPE from HENRY_BOOK
+        group by TYPE;
+        """
+        self.execute_query(sql_query, print_result=False)
+        categories = []
+        for row in self.cursor:
+            categories.append(row[0])
+        return categories
+
+    def get_category_books(self, category_code):
+        sql_query = """
+            select BOOK_CODE,
+                   TITLE,
+                   PRICE
+            from HENRY_BOOK
+            where TYPE = '{}';
+            """.format(category_code)
 
         self.execute_query(sql_query, print_result=False)
         books = []
@@ -135,10 +160,27 @@ class HenryDAO:
             books.append(book)
         return books
 
+    def get_publishers(self):
+        sql_query = """
+        select book.PUBLISHER_CODE, PUBLISHER_NAME
+        from HENRY_PUBLISHER publisher join HENRY_BOOK book 
+        on publisher.PUBLISHER_CODE = book.PUBLISHER_CODE;
+        """
+        self.execute_query(sql_query, print_result=False)
+        categories = []
+        for row in self.cursor:
+            categories.append(self.Publisher(
+                publisher_code=row[0], publisher_name=row[1]))
+        return categories
+
     def get_publisher_books(self, publisher_id):
         # TODO Fill in SQL
         sql_query = """
-            select stuff {};
+            select BOOK_CODE,
+                   TITLE,
+                   PRICE
+            from HENRY_BOOK
+            where PUBLISHER_CODE = '{}';
             """.format(publisher_id)
 
         self.execute_query(sql_query, print_result=False)
