@@ -60,16 +60,22 @@ class HenryDAO:
 
     # ---------------------------------------------------------------------------------------------------------
 
-    def __init__(self):
+    def __init__(self, username, password, database, host):
         # initialize connection object
-        self.db = mysql.connector.connect(
-            # When grading, please replace with your user credentials
-            user="root",
-            passwd="V9n5csjf!",
-            database="henryDB",
-            host="localhost"
-        )
-        self.cursor = self.db.cursor()
+        try:
+            self.db = mysql.connector.connect(
+                # When grading, please replace with your user credentials
+                # TODO: INITIALIZE WITH GRADER's INPUT
+                user=username,
+                passwd=password,
+                database=database,
+                host=host
+            )
+            self.cursor = self.db.cursor()
+            print("Login successful!")
+        except mysql.connector.Error as error:
+            print("Login information is invalid. Please Try Again.")
+            raise ValueError
 
     def close(self):
         # atomic transaction

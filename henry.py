@@ -1,45 +1,46 @@
 from tkinter import *
 from tkinter import ttk
 from henryDAO import HenryDAO
-import random
-
+import time
 
 # GLOBAL DATA ACCESS OBJECT
-DAO = HenryDAO()
+DAO = None
 
 
-class BranchInventory(ttk.Treeview):
-    def __init__(self, tab_frame: ttk.Frame):
-        # Creates the TreeView to display information about branch's inventory
-        self.branch_inventory = ttk.Treeview(tab_frame, columns=(
-            "Branch", "Copies Available"), show="headings")
-        # Position Treview in top left corner
-        self.branch_inventory.grid(row=0, column=0)
-        self.branch_inventory.heading("Branch", text="Branch")
-        self.branch_inventory.heading(
-            "Copies Available", text="Copies Available")
+class HenryBaseComponent():
+    # INNER CLASS OF HENRY BASE COMPONENT -----------------------------------------------------------
+    class BranchInventory(ttk.Treeview):
+        def __init__(self, tab_frame: ttk.Frame):
+            # Creates the TreeView to display information about branch's inventory
+            self.branch_inventory = ttk.Treeview(tab_frame, columns=(
+                "Branch", "Copies Available"), show="headings")
+            # Position Treview in top left corner
+            self.branch_inventory.grid(row=0, column=0)
+            self.branch_inventory.heading("Branch", text="Branch")
+            self.branch_inventory.heading(
+                "Copies Available", text="Copies Available")
 
-    def clear(self):
-        # delete old values in tree list
-        for item in self.branch_inventory.get_children():
-            self.branch_inventory.delete(item)
+        def clear(self):
+            # delete old values in tree list
+            for item in self.branch_inventory.get_children():
+                self.branch_inventory.delete(item)
 
-    def display(self, inventory_info: [list]):
-        # Fill Branch Inventory Treeview wiith info
-        for item in inventory_info:
-            self.branch_inventory.insert("", END, value=item)
-        self.branch_inventory.column("Copies Available", anchor="center")
-        self.branch_inventory.column("Branch", anchor="center")
+        def display(self, inventory_info: [list]):
+            # Fill Branch Inventory Treeview wiith info
+            for item in inventory_info:
+                self.branch_inventory.insert("", END, value=item)
+            # Display Headings
+            self.branch_inventory.column("Copies Available", anchor="center")
+            self.branch_inventory.column("Branch", anchor="center")
+    # --------------------------------------------------------------------------------------------
 
-
-class HenryResultPrice():
-    # since all Search Type share the same Result TreeView, and the Price Tag Panel
+    # Since all Search Type share the same Result TreeView, and the Price Tag Panel
     # I just pulled it up into a parent class
     # and have HenrySBA, SBC, SBP inherit from it
     # Creates the TreeView to display information about branch's inventory
     def __init__(self, tab_frame: ttk.Frame, optional_bg: str = "white"):
         # Create Branch Inventory
-        self.branch_inventory = BranchInventory(tab_frame)
+        self.branch_inventory = self.BranchInventory(tab_frame)
 
         # Creates Book Selection ComboBox
         self.book_selection = ttk.Combobox(
@@ -131,7 +132,7 @@ class HenryResultPrice():
         self.price_tag["text"] = "${}".format(book_price)
 
 
-class HenrySBA(HenryResultPrice):
+class HenrySBA(HenryBaseComponent):
     def __init__(self, tab_frame: ttk.Frame):
         # call parent constructor
         super().__init__(tab_frame, optional_bg="#ff8863")
@@ -161,7 +162,7 @@ class HenrySBA(HenryResultPrice):
         self.get_books(event=None, search_type="author", default_index=0)
 
 
-class HenrySBC(HenryResultPrice):
+class HenrySBC(HenryBaseComponent):
     def __init__(self, tab_frame: ttk.Frame):
         # call parent constructor
         super().__init__(tab_frame, optional_bg="#98e7ed")
@@ -191,7 +192,7 @@ class HenrySBC(HenryResultPrice):
             event=None, search_type="category", default_index=0)
 
 
-class HenrySBP(HenryResultPrice):
+class HenrySBP(HenryBaseComponent):
     def __init__(self, tab_frame: ttk.Frame):
         # call parent constructor
         super().__init__(tab_frame, optional_bg="#8df0c7")
@@ -222,13 +223,9 @@ class HenrySBP(HenryResultPrice):
             event=None, search_type="publisher", default_index=0)
 
 
-def main():
-    main_window = Tk()
-    main_window.title("Henry Bookstore by Khai Lai")
-    main_window.geometry("800x500")
-
+def render_app(root):
     # create Tab Control widget
-    tab_ctrl = ttk.Notebook(main_window)
+    tab_ctrl = ttk.Notebook(root)
     # Create "Search By Author", "Categories", "Publisher" tabs
     tab_sba = ttk.Frame(tab_ctrl)
     tab_sbc = ttk.Frame(tab_ctrl)
@@ -243,6 +240,104 @@ def main():
     SBA_frame = HenrySBA(tab_sba)
     SBC_frame = HenrySBC(tab_sbc)
     SBP_frame = HenrySBP(tab_sbp)
+
+
+def exit_app(root, top):
+    # destroy everything and end the app
+    top.destroy()
+    root.destroy()
+    sys.exit()
+
+
+def validate_db_login(root, login_pane, connection_msg, username, password, db_name, host):
+    global DAO
+
+    try:
+        DAO = HenryDAO(username, password, db_name, host)
+        # Render Bookstore App
+        render_app(root)
+        # Unhide main window
+        root.deiconify()
+        # Destroy login panel
+        login_pane.destroy()
+
+    except ValueError:
+        connection_msg["text"] = "Login Credential is INVALID."
+
+
+def main():
+    # GLOBAL DATA ACCESS OBJECT
+    global DAO
+
+    main_window = Tk()
+    main_window.title("Henry Bookstore by Khai Lai")
+    main_window.geometry("800x500")
+
+    login_panel = Toplevel()
+    login_panel.title("Sign in to Henry Bookstore's Database")
+    login_panel.geometry("300x150")
+
+    # Database Login Form
+    username_label = Label(login_panel, text="Username: ")
+    username_label.grid(row=0, column=0)
+    # username entry form
+    username = StringVar()
+    username_input = Entry(login_panel, textvariable=username)
+    username_input.grid(row=0, column=1)
+
+    # password entry form
+    password_label = Label(login_panel, text="Password: ")
+    password_label.grid(row=1, column=0)
+    password = StringVar()
+    password_input = Entry(login_panel, textvariable=password, show="*")
+    password_input.grid(row=1, column=1)
+
+    # database name entry form
+    database_label = Label(login_panel, text="Database: ")
+    database_label.grid(row=2, column=0)
+    db_name = StringVar()
+    database_input = Entry(login_panel, textvariable=db_name)
+    database_input.grid(row=2, column=1)
+
+    # host ip entry form
+    host_label = Label(login_panel, text="Host IP: ")
+    host_label.grid(row=3, column=0)
+    host_name = StringVar()
+    host_input = Entry(login_panel, textvariable=host_name)
+    # by default, it is local host
+    host_input.insert(0, "localhost")
+    host_input.grid(row=3, column=1)
+
+    # Login button
+    # If Login is successful then it will display the Bookstore app
+    login_button = Button(login_panel, text="LOGIN", command=lambda: validate_db_login(
+        root=main_window,
+        login_pane=login_panel,
+        connection_msg=connection_status,
+        username=username_input.get().strip(),
+        password=password_input.get().strip(),
+        db_name=database_input.get().strip(),
+        host=host_input.get().strip())
+    )
+    login_button.grid(row=4, column=0)
+
+    # Exit button
+    exit_button = Button(login_panel, text="EXIT",
+                         command=lambda: exit_app(main_window, login_panel))
+    exit_button.grid(row=4, column=1)
+
+    # To receive connection status from validate_db_login()
+    connection_status = Label(login_panel, text="")
+    connection_status.grid(row=5, column=0, columnspan=2)
+
+    # hide main window right now
+    # only display top level login page
+    main_window.withdraw()
+
+    # handles user clicking X while on Login Panel
+    # Else, UI would close, but script would not terminate
+    login_panel.protocol("WM_DELETE_WINDOW", lambda: exit_app(
+        root=main_window, top=login_panel))
 
     main_window.mainloop()
 
